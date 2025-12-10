@@ -1,0 +1,152 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const SERVERS = {
+  openai: {
+    name: 'openai-mcp',
+    port: 3500,
+    path: 'packages/openai-mcp',
+    envFile: '.env',
+    envVar: 'OPENAI_API_KEY'
+  },
+  gemini: {
+    name: 'gemini-mcp',
+    port: 3501,
+    path: 'packages/gemini-mcp',
+    envFile: '.env',
+    envVar: 'GEMINI_API_KEY'
+  }
+};
+
+function printUsage() {
+  console.log(`
+MCP Server Manager
+
+Usage:
+  mcp -m <model> [options]
+
+Models:
+  openai    Start OpenAI MCP server (port 3500)
+  gemini    Start Gemini MCP server (port 3501)
+  all       Start all MCP servers
+
+Options:
+  -d, --down    Stop the server(s)
+  -r, --restart Restart the server(s)
+  -l, --logs    View server logs
+  -h, --help    Show this help message
+
+Examples:
+  mcp -m openai              # Start OpenAI server
+  mcp -m gemini              # Start Gemini server
+  mcp -m all                 # Start all servers
+  mcp -m openai -d           # Stop OpenAI server
+  mcp -m openai -l           # View OpenAI server logs
+  mcp -m openai -r           # Restart OpenAI server
+`);
+}
+
+function checkEnvFile(server) {
+  const envPath = path.join(__dirname, server.path, server.envFile);
+  if (!fs.existsSync(envPath)) {
+    console.warn(`⚠️  Warning: ${server.envFile} not found in ${server.path}`);
+    console.warn(`   Please create it with your ${server.envVar}`);
+    return false;
+  }
+  return true;
+}
+
+function runDockerCompose(server, command, args = []) {
+  const cwd = path.join(__dirname, server.path);
+  
+  console.log(`🚀 ${command === 'up' ? 'Starting' : command === 'down' ? 'Stopping' : 'Managing'} ${server.name}...`);
+  
+  if (command === 'up') {
+    checkEnvFile(server);
+  }
+
+  const dockerArgs = ['compose', command, ...args];
+  const proc = spawn('docker', dockerArgs, {
+    cwd,
+    stdio: 'inherit',
+    shell: true
+  });
+
+  proc.on('error', (error) => {
+    console.error(`❌ Error: ${error.message}`);
+    process.exit(1);
+  });
+
+  proc.on('exit', (code) => {
+    if (code === 0) {
+      if (command === 'up') {
+        console.log(`✅ ${server.name} is running on port ${server.port}`);
+        console.log(`   Health check: http://localhost:${server.port}/health`);
+      } else if (command === 'down') {
+        console.log(`✅ ${server.name} stopped`);
+      }
+    } else {
+      console.error(`❌ ${server.name} exited with code ${code}`);
+      process.exit(code);
+    }
+  });
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  
+  if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+    printUsage();
+    process.exit(0);
+  }
+
+  const modelIndex = args.indexOf('-m');
+  if (modelIndex === -1) {
+    console.error('❌ Error: -m flag is required');
+    printUsage();
+    process.exit(1);
+  }
+
+  const model = args[modelIndex + 1];
+  if (!model) {
+    console.error('❌ Error: model name is required after -m');
+    printUsage();
+    process.exit(1);
+  }
+
+  const isDown = args.includes('-d') || args.includes('--down');
+  const isRestart = args.includes('-r') || args.includes('--restart');
+  const isLogs = args.includes('-l') || args.includes('--logs');
+
+  let command = 'up';
+  let commandArgs = ['-d'];
+
+  if (isDown) {
+    command = 'down';
+    commandArgs = [];
+  } else if (isRestart) {
+    command = 'restart';
+    commandArgs = [];
+  } else if (isLogs) {
+    command = 'logs';
+    commandArgs = ['-f'];
+  }
+
+  if (model === 'all') {
+    Object.values(SERVERS).forEach(server => {
+      runDockerCompose(server, command, commandArgs);
+    });
+  } else if (SERVERS[model]) {
+    runDockerCompose(SERVERS[model], command, commandArgs);
+  } else {
+    console.error(`❌ Error: Unknown model '${model}'`);
+    console.error(`   Available models: ${Object.keys(SERVERS).join(', ')}, all`);
+    process.exit(1);
+  }
+}
+
+main();
+

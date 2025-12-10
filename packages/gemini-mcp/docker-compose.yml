@@ -1,0 +1,13 @@
+services:
+  gemini-mcp:
+    build:
+      context: ../..
+      dockerfile: packages/gemini-mcp/Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MCP_MODE=http
+      - PORT=3501
+    ports:
+      - "3501:3501"
+    stdin_open: true
+    tty: true

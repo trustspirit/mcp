@@ -1,0 +1,13 @@
+services:
+  openai-mcp:
+    build:
+      context: ../..
+      dockerfile: packages/openai-mcp/Dockerfile
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MCP_MODE=http
+      - PORT=3500
+    ports:
+      - "3500:3500"
+    stdin_open: true
+    tty: true
