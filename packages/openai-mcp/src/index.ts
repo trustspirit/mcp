@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -9,6 +9,7 @@ import {
 import OpenAI from "openai";
 import express from "express";
 import cors from "cors";
+import { randomUUID } from "node:crypto";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -451,24 +452,30 @@ async function main() {
   const port = process.env.PORT || 3500;
 
   if (mode === "http") {
-    // HTTP/SSE mode for external access
+    // HTTP mode with StreamableHTTPServerTransport
     const app = express();
     app.use(cors());
     app.use(express.json());
+
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+    });
+
+    await server.connect(transport);
 
     app.get("/health", (_req, res) => {
       res.json({ status: "ok", server: "openai-mcp" });
     });
 
-    app.post("/sse", async (req, res) => {
-      const transport = new SSEServerTransport("/message", res);
-      await server.connect(transport);
+    // Handle all MCP requests (GET for SSE stream, POST for messages, DELETE for session)
+    app.all("/mcp", async (req, res) => {
+      await transport.handleRequest(req, res, req.body);
     });
 
     app.listen(port, () => {
       console.error(`OpenAI MCP server running on HTTP port ${port}`);
       console.error(`Health check: http://localhost:${port}/health`);
-      console.error(`SSE endpoint: http://localhost:${port}/sse`);
+      console.error(`MCP endpoint: http://localhost:${port}/mcp`);
     });
   } else {
     // Default stdio mode
