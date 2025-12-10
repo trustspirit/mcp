@@ -6,9 +6,12 @@ Model Context Protocol (MCP) server for Google Gemini API integration.
 
 - **Generate Content**: Generate text using Gemini models
 - **Chat**: Multi-turn conversations with history support
+- **Web Search**: Search the web and get AI-generated answers using Gemini models
 - **Embeddings**: Generate text embeddings for semantic search
 - **Count Tokens**: Count tokens in text
 - **Analyze Image**: Vision capabilities for image analysis
+- **Generate Image**: Create images with Imagen 3 (experimental)
+- **Create Video**: Create videos with Veo 2 (experimental)
 - **List Models**: List available Gemini models
 
 ## Installation
@@ -27,6 +30,12 @@ export GEMINI_API_KEY=your-api-key-here
 ```
 
 Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+Or create a `.env` file in `packages/gemini-mcp/`:
+
+```bash
+GEMINI_API_KEY=your-api-key-here
+```
 
 ## Usage
 
@@ -119,6 +128,23 @@ Analyze an image with vision capabilities.
   "model": "gemini-2.0-flash-exp"
 }
 ```
+
+### web_search
+
+Search the web and get AI-generated answers using Gemini's **Google Search Grounding**. This feature uses Google's built-in search capabilities - no external API keys required!
+
+```json
+{
+  "query": "What are the latest developments in AI?",
+  "model": "gemini-2.0-flash-exp"
+}
+```
+
+**Parameters:**
+- `query` (required): The search query
+- `model` (optional): Gemini model to use (default: "gemini-2.0-flash-exp")
+
+**Note:** This uses Google Search Grounding built into Gemini API - no additional API keys needed!
 
 ### list_models
 

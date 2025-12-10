@@ -82,6 +82,13 @@ interface GenerateImageParams {
   negativePrompt?: string;
 }
 
+interface WebSearchParams {
+  query: string;
+  model?: string;
+  max_results?: number;
+  include_answer?: boolean;
+}
+
 // Safety settings
 const safetySettings = [
   {
@@ -349,6 +356,39 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "web_search",
+        description:
+          "Search the web and get AI-generated answers using Gemini models. Combines web search results with Google's Gemini for comprehensive responses.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "The search query",
+            },
+            model: {
+              type: "string",
+              default: "gemini-2.0-flash-exp",
+              description: "The Gemini model to use for generating the answer",
+            },
+            max_results: {
+              type: "number",
+              minimum: 1,
+              maximum: 10,
+              default: 5,
+              description: "Maximum number of search results to include",
+            },
+            include_answer: {
+              type: "boolean",
+              default: true,
+              description:
+                "Whether to generate an AI answer based on search results",
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
         name: "list_models",
         description: "List available Gemini models",
         inputSchema: {
@@ -612,6 +652,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
           ],
         };
+      }
+
+      case "web_search": {
+        const params = args as unknown as WebSearchParams;
+        const modelName = params.model ?? "gemini-2.0-flash-exp";
+
+        try {
+          // Use Google Search Grounding - built into Gemini API (no extra API key needed!)
+          const model = genAI.getGenerativeModel({
+            model: modelName,
+            safetySettings,
+            tools: [
+              {
+                googleSearchRetrieval: {},
+              },
+            ],
+          });
+
+          const result = await model.generateContent(params.query);
+
+          const response = result.response;
+          const groundingMetadata = (response as any).groundingMetadata;
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    query: params.query,
+                    answer: response.text(),
+                    model: modelName,
+                    grounding_metadata: groundingMetadata || null,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error occurred";
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error performing web search with Gemini: ${errorMessage}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
 
       case "list_models": {

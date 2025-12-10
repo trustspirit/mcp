@@ -101,11 +101,51 @@ pnpm build
 | [@mcp/openai](./packages/openai-mcp) | OpenAI API integration (GPT, DALL-E, Embeddings, TTS) |
 | [@mcp/gemini](./packages/gemini-mcp) | Google Gemini API integration (Text, Chat, Vision, Embeddings) |
 
-## Adding New MCP Servers
+## 🏗️ Architecture
+
+### Dual Mode Support
+
+All MCP servers support two modes:
+
+1. **stdio mode** (default): For Claude Desktop integration
+2. **HTTP/SSE mode**: For external access via REST API
+
+Set `MCP_MODE=http` environment variable to enable HTTP mode.
+
+### Adding New MCP Servers
 
 1. Create a new directory under `packages/`
 2. Add the required `package.json` and `tsconfig.json`
 3. Implement your MCP server using `@modelcontextprotocol/sdk`
+4. Add HTTP/SSE support with Express
+5. Create Dockerfile and docker-compose.yml
+6. Update the `mcp` CLI script to include the new server
+
+## 📚 API Documentation
+
+### Health Check
+
+```bash
+curl http://localhost:3500/health
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "server": "openai-mcp"
+}
+```
+
+### Using MCP Tools
+
+Connect to the SSE endpoint using an MCP client or test with:
+
+```bash
+curl -X POST http://localhost:3500/sse \
+  -H "Content-Type: application/json" \
+  -d '{"method": "tools/list"}'
+```
 
 ## License
 

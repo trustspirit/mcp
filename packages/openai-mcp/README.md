@@ -8,6 +8,7 @@ Model Context Protocol (MCP) server for OpenAI API integration.
 - **Image Generation**: Create images with DALL-E
 - **Embeddings**: Generate text embeddings for semantic search
 - **Text-to-Speech**: Convert text to audio
+- **Video Generation**: Create videos with Sora 2 (experimental)
 - **List Models**: Retrieve available OpenAI models
 
 ## Installation
@@ -25,32 +26,106 @@ Set your OpenAI API key as an environment variable:
 export OPENAI_API_KEY=sk-your-api-key-here
 ```
 
-Or create a `.env` file based on `.env.example`.
+Or create a `.env` file in `packages/openai-mcp/`:
+
+```bash
+OPENAI_API_KEY=sk-your-api-key-here
+```
 
 ## Usage
 
-### With Claude Desktop
+### Option 1: Node.js (Recommended)
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+#### Step 1: Build the project
+
+```bash
+# From project root
+pnpm --filter @mcp/openai build
+```
+
+#### Step 2: Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "openai": {
       "command": "node",
-      "args": ["/path/to/mcp/packages/openai-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/mcp/packages/openai-mcp/dist/index.js"],
       "env": {
-        "OPENAI_API_KEY": "sk-your-api-key-here"
+        "OPENAI_API_KEY": "sk-your-actual-api-key"
       }
     }
   }
 }
 ```
 
-### Standalone
+**Important**: 
+- Replace `/absolute/path/to/mcp` with your actual path
+- Replace API key with your actual key
+- Restart Claude Desktop after configuration
+
+### Option 2: Docker
+
+#### Step 1: Build the Docker image
 
 ```bash
+# From project root
+docker build -t openai-mcp -f packages/openai-mcp/Dockerfile .
+```
+
+#### Step 2: Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "openai": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e", "OPENAI_API_KEY=sk-your-actual-api-key",
+        "openai-mcp"
+      ]
+    }
+  }
+}
+```
+
+**Important**: 
+- Replace API key with your actual key
+- The `--rm` flag automatically removes the container after use
+- Restart Claude Desktop after configuration
+
+### Option 3: Docker Compose (HTTP Mode)
+
+For running as a standalone HTTP server:
+
+```bash
+cd packages/openai-mcp
+
+# Create .env file
+echo "OPENAI_API_KEY=sk-your-key" > .env
+
+# Start server
+docker-compose up --build -d
+
+# Check health
+curl http://localhost:3500/health
+```
+
+### Standalone Usage
+
+```bash
+# stdio mode (default)
 OPENAI_API_KEY=sk-xxx node dist/index.js
+
+# HTTP mode
+MCP_MODE=http PORT=3500 OPENAI_API_KEY=sk-xxx node dist/index.js
 ```
 
 ## Available Tools
