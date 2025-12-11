@@ -49,3 +49,4 @@ ENV NODE_ENV=production
 # MCP 서버는 stdio로 통신하므로 interactive 모드로 실행
 CMD ["node", "dist/index.js"]
 
+

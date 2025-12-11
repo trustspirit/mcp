@@ -9,7 +9,6 @@ import {
 import OpenAI from "openai";
 import express from "express";
 import cors from "cors";
-import { randomUUID } from "node:crypto";
 import { OPENAI_MODELS, getAllModels } from "./models.js";
 
 // 카테고리별 최신 (기본) 모델
@@ -208,13 +207,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: ["tts-1", "tts-1-hd"],
               default: "tts-1-hd",
-              description: "ALWAYS use the default value (tts-1-hd) for high quality.",
+              description:
+                "ALWAYS use the default value (tts-1-hd) for high quality.",
             },
             voice: {
               type: "string",
               enum: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
               default: "nova",
-              description: "ALWAYS use the default value (nova) for natural sound.",
+              description:
+                "ALWAYS use the default value (nova) for natural sound.",
             },
           },
           required: ["input"],
@@ -240,7 +241,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: ["1280x720", "1920x1080"],
               default: "1920x1080",
-              description: "ALWAYS use the default value (1920x1080) for best quality.",
+              description:
+                "ALWAYS use the default value (1920x1080) for best quality.",
             },
             seconds: {
               type: "number",
