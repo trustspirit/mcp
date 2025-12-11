@@ -88,8 +88,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "chat_completion",
-        description:
-          "Generate a chat completion using OpenAI's GPT models. Supports conversation history with system, user, and assistant messages.",
+        description: `Generate a chat completion using OpenAI's GPT models. IMPORTANT: Always use the default model (${DEFAULT_MODELS.chat}) unless the user explicitly requests a different model.`,
         inputSchema: {
           type: "object",
           properties: {
@@ -111,9 +110,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             model: {
               type: "string",
               default: DEFAULT_MODELS.chat,
-              description: `The model to use for completion. Available: ${OPENAI_MODELS.gpt
-                .map((m) => m.name)
-                .join(", ")}`,
+              description: `ALWAYS use the default value unless user explicitly requests another model. Default: ${DEFAULT_MODELS.chat}`,
             },
             temperature: {
               type: "number",
@@ -131,8 +128,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "create_image",
-        description:
-          "Generate images using DALL-E. Returns URLs to the generated images.",
+        description: `Generate images using OpenAI's image models. IMPORTANT: Always use the default model (${DEFAULT_MODELS.image}) unless the user explicitly requests a different model.`,
         inputSchema: {
           type: "object",
           properties: {
@@ -144,9 +140,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: OPENAI_MODELS.image.map((m) => m.name),
               default: DEFAULT_MODELS.image,
-              description: `Image generation model. Available: ${OPENAI_MODELS.image
-                .map((m) => m.name)
-                .join(", ")}`,
+              description: `ALWAYS use the default value unless user explicitly requests another model. Default: ${DEFAULT_MODELS.image}`,
             },
             size: {
               type: "string",
@@ -178,7 +172,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "create_embedding",
         description:
-          "Create embeddings for text using OpenAI's embedding models. Useful for semantic search and similarity comparisons.",
+          "Create embeddings for text using OpenAI's embedding models. IMPORTANT: Always use the default model (text-embedding-3-large) for best quality.",
         inputSchema: {
           type: "object",
           properties: {
@@ -193,7 +187,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               default: "text-embedding-3-large",
               description:
-                "The embedding model to use (text-embedding-3-large, text-embedding-3-small, text-embedding-ada-002)",
+                "ALWAYS use the default value (text-embedding-3-large) for best quality.",
             },
           },
           required: ["input"],
@@ -202,7 +196,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "text_to_speech",
         description:
-          "Convert text to speech using OpenAI's TTS models. Returns audio data as base64.",
+          "Convert text to speech using OpenAI's TTS models. IMPORTANT: Always use the default model and voice for best quality.",
         inputSchema: {
           type: "object",
           properties: {
@@ -213,12 +207,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             model: {
               type: "string",
               enum: ["tts-1", "tts-1-hd"],
-              default: "tts-1",
+              default: "tts-1-hd",
+              description: "ALWAYS use the default value (tts-1-hd) for high quality.",
             },
             voice: {
               type: "string",
               enum: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
-              default: "alloy",
+              default: "nova",
+              description: "ALWAYS use the default value (nova) for natural sound.",
             },
           },
           required: ["input"],
@@ -226,8 +222,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "create_video",
-        description:
-          "Generate videos using Sora 2. Returns URLs to the generated videos.",
+        description: `Generate videos using OpenAI's Sora models. IMPORTANT: Always use the default model (${DEFAULT_MODELS.video}) unless the user explicitly requests a different model.`,
         inputSchema: {
           type: "object",
           properties: {
@@ -239,15 +234,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               enum: OPENAI_MODELS.video.map((m) => m.name),
               default: DEFAULT_MODELS.video,
-              description: `Video generation model. Available: ${OPENAI_MODELS.video
-                .map((m) => m.name)
-                .join(", ")}`,
+              description: `ALWAYS use the default value unless user explicitly requests another model. Default: ${DEFAULT_MODELS.video}`,
             },
             size: {
               type: "string",
               enum: ["1280x720", "1920x1080"],
-              default: "1280x720",
-              description: "Video resolution",
+              default: "1920x1080",
+              description: "ALWAYS use the default value (1920x1080) for best quality.",
             },
             seconds: {
               type: "number",
@@ -495,8 +488,9 @@ async function main() {
     app.use(cors());
     app.use(express.json());
 
+    // Stateless mode - 여러 클라이언트 연결 지원
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
+      sessionIdGenerator: undefined,
     });
 
     await server.connect(transport);

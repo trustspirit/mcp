@@ -816,8 +816,9 @@ async function main() {
     app.use(cors());
     app.use(express.json());
 
+    // Stateless mode - 여러 클라이언트 연결 지원
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
+      sessionIdGenerator: undefined,
     });
 
     await server.connect(transport);
