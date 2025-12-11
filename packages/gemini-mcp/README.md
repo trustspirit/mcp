@@ -39,16 +39,24 @@ GEMINI_API_KEY=your-api-key-here
 
 ## Usage
 
-### With Claude Desktop
+### Option 1: Node.js (Simple)
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+#### Step 1: Build the project
+
+```bash
+pnpm --filter @mcp/gemini build
+```
+
+#### Step 2: Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "gemini": {
       "command": "node",
-      "args": ["/path/to/mcp/packages/gemini-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/mcp/packages/gemini-mcp/dist/index.js"],
       "env": {
         "GEMINI_API_KEY": "your-api-key-here"
       }
@@ -57,10 +65,65 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-### Standalone
+### Option 2: HTTP Mode + mcp-remote (Recommended for Production)
+
+이미 실행 중인 MCP 서버에 연결하는 방식입니다. **빠르고 리소스 효율적**입니다.
+
+#### Step 1: Start the server (once)
 
 ```bash
+cd packages/gemini-mcp
+
+# Create .env file
+echo "GEMINI_API_KEY=your-key" > .env
+
+# Start server in background
+docker-compose up --build -d
+
+# Verify server is running
+curl http://localhost:3501/health
+```
+
+#### Step 2: Configure Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3501/mcp"]
+    }
+  }
+}
+```
+
+**장점:**
+- ✅ 빠른 연결 (서버가 이미 실행 중)
+- ✅ 리소스 절약 (매번 새 컨테이너를 띄우지 않음)
+- ✅ 상태 유지
+- ✅ 다중 클라이언트 연결 가능
+
+### Option 3: Docker (New container each time)
+
+```json
+{
+  "mcpServers": {
+    "gemini": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GEMINI_API_KEY=your-api-key", "gemini-mcp"]
+    }
+  }
+}
+```
+
+### Standalone Usage
+
+```bash
+# stdio mode (default)
 GEMINI_API_KEY=xxx node dist/index.js
+
+# HTTP mode
+MCP_MODE=http PORT=3501 GEMINI_API_KEY=xxx node dist/index.js
 ```
 
 ## Available Tools

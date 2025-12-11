@@ -101,9 +101,11 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 - The `--rm` flag automatically removes the container after use
 - Restart Claude Desktop after configuration
 
-### Option 3: Docker Compose (HTTP Mode)
+### Option 3: HTTP Mode with mcp-remote (Recommended for Production)
 
-For running as a standalone HTTP server:
+이미 실행 중인 MCP 서버에 연결하는 방식입니다. 매번 새 컨테이너를 띄우지 않아 **빠르고 리소스 효율적**입니다.
+
+#### Step 1: Start the server (once)
 
 ```bash
 cd packages/openai-mcp
@@ -111,11 +113,49 @@ cd packages/openai-mcp
 # Create .env file
 echo "OPENAI_API_KEY=sk-your-key" > .env
 
+# Start server in background
+docker-compose up --build -d
+
+# Verify server is running
+curl http://localhost:3500/health
+```
+
+#### Step 2: Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "openai": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3500/mcp"]
+    }
+  }
+}
+```
+
+**장점:**
+- ✅ 빠른 연결 (서버가 이미 실행 중)
+- ✅ 리소스 절약 (매번 새 컨테이너를 띄우지 않음)
+- ✅ 상태 유지
+- ✅ 다중 클라이언트 연결 가능
+
+### Option 4: Docker Compose (Standalone HTTP Server)
+
+HTTP API로 직접 호출하려면:
+
+```bash
+cd packages/openai-mcp
+
 # Start server
 docker-compose up --build -d
 
 # Check health
 curl http://localhost:3500/health
+
+# MCP endpoint
+# POST http://localhost:3500/mcp
 ```
 
 ### Standalone Usage

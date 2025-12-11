@@ -67,7 +67,9 @@ curl http://localhost:3501/health
 
 ## Using with Claude Desktop
 
-### stdio Mode (Default)
+### 방법 1: stdio Mode (간단한 설정)
+
+매번 새 프로세스를 실행하는 방식입니다.
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -92,7 +94,58 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-### HTTP Mode (Docker)
+### 방법 2: HTTP Mode + mcp-remote (권장 - 프로덕션용)
+
+이미 실행 중인 MCP 서버에 연결하는 방식입니다. **빠르고 리소스 효율적**입니다.
+
+#### Step 1: 서버 시작 (한 번만)
+
+```bash
+# 환경 변수 설정
+echo "OPENAI_API_KEY=sk-your-key" > packages/openai-mcp/.env
+echo "GEMINI_API_KEY=your-key" > packages/gemini-mcp/.env
+
+# 서버 시작
+./mcp -m all
+
+# 또는 개별 시작
+./mcp -m openai
+./mcp -m gemini
+```
+
+#### Step 2: 서버 상태 확인
+
+```bash
+curl http://localhost:3500/health  # OpenAI
+curl http://localhost:3501/health  # Gemini
+```
+
+#### Step 3: Claude Desktop 설정
+
+```json
+{
+  "mcpServers": {
+    "openai": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3500/mcp"]
+    },
+    "gemini": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3501/mcp"]
+    }
+  }
+}
+```
+
+**장점:**
+- ✅ 빠른 연결 (서버가 이미 실행 중)
+- ✅ 리소스 절약 (매번 새 컨테이너를 띄우지 않음)
+- ✅ 상태 유지
+- ✅ 다중 클라이언트 연결 가능
+
+### 방법 3: Docker (매번 새 컨테이너)
+
+매번 새 Docker 컨테이너를 실행합니다.
 
 ```json
 {
@@ -101,13 +154,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "docker",
       "args": ["run", "-i", "--rm", 
                "-e", "OPENAI_API_KEY=sk-your-key",
-               "-e", "MCP_MODE=http",
-               "-p", "3500:3500",
                "openai-mcp"]
     }
   }
 }
 ```
+
+### 비교표
+
+| 방법 | 장점 | 단점 |
+|-----|-----|-----|
+| **stdio (Node.js)** | 설정 간단 | 매번 새 프로세스 |
+| **HTTP + mcp-remote** | 빠름, 리소스 절약 | 서버를 미리 띄워야 함 |
+| **Docker (매번 실행)** | 독립 환경 | 느린 시작, 리소스 사용 |
 
 ## API Examples
 
@@ -115,43 +174,47 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```bash
 # OpenAI tools
-curl -X POST http://localhost:3500/sse \
+curl -X POST http://localhost:3500/mcp \
   -H "Content-Type: application/json" \
-  -d '{"method": "tools/list", "params": {}}'
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}'
 
 # Gemini tools
-curl -X POST http://localhost:3501/sse \
+curl -X POST http://localhost:3501/mcp \
   -H "Content-Type: application/json" \
-  -d '{"method": "tools/list", "params": {}}'
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}'
 ```
 
 ### Call a Tool
 
 ```bash
-# Generate image with DALL-E
-curl -X POST http://localhost:3500/sse \
+# Generate image with GPT Image 1
+curl -X POST http://localhost:3500/mcp \
   -H "Content-Type: application/json" \
   -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
     "method": "tools/call",
     "params": {
       "name": "create_image",
       "arguments": {
         "prompt": "A beautiful sunset over mountains",
-        "model": "dall-e-3"
+        "model": "gpt-image-1"
       }
     }
   }'
 
 # Generate text with Gemini
-curl -X POST http://localhost:3501/sse \
+curl -X POST http://localhost:3501/mcp \
   -H "Content-Type: application/json" \
   -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
     "method": "tools/call",
     "params": {
       "name": "generate_content",
       "arguments": {
         "prompt": "Explain quantum computing",
-        "model": "gemini-3.0-pro"
+        "model": "gemini-2.0-flash-exp"
       }
     }
   }'

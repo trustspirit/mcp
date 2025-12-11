@@ -10,6 +10,16 @@ import OpenAI from "openai";
 import express from "express";
 import cors from "cors";
 import { randomUUID } from "node:crypto";
+import { OPENAI_MODELS, getAllModels } from "./models.js";
+
+// 카테고리별 최신 (기본) 모델
+const DEFAULT_MODELS = {
+  chat: OPENAI_MODELS.gpt[0].name, // gpt-5.1
+  coding: OPENAI_MODELS.coding[0].name, // gpt-5.1-codex
+  image: OPENAI_MODELS.image[0].name, // gpt-image-1
+  video: OPENAI_MODELS.video[0].name, // sora-2
+  audio: OPENAI_MODELS.audio[0].name, // gpt-realtime
+};
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -35,7 +45,7 @@ interface ChatCompletionParams {
 
 interface CreateImageParams {
   prompt: string;
-  model?: "dall-e-2" | "dall-e-3" | "dall-e-4" | "gpt-4o-image";
+  model?: string;
   size?: "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792";
   quality?: "standard" | "hd";
   n?: number;
@@ -54,7 +64,7 @@ interface TextToSpeechParams {
 
 interface CreateVideoParams {
   prompt: string;
-  model?: "sora-2" | "sora-2-pro";
+  model?: string;
   size?: "1280x720" | "1920x1080";
   seconds?: number;
 }
@@ -100,9 +110,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             model: {
               type: "string",
-              default: "gpt-5-1",
-              description:
-                "The model to use for completion (gpt-5-1, gpt-5-1-thinking, gpt-4o, gpt-4o-mini, o1, o1-mini, gpt-4-turbo, gpt-3.5-turbo)",
+              default: DEFAULT_MODELS.chat,
+              description: `The model to use for completion. Available: ${OPENAI_MODELS.gpt
+                .map((m) => m.name)
+                .join(", ")}`,
             },
             temperature: {
               type: "number",
@@ -131,10 +142,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             model: {
               type: "string",
-              enum: ["dall-e-2", "dall-e-3", "dall-e-4", "gpt-4o-image"],
-              default: "dall-e-3",
-              description:
-                "Image generation model (dall-e-3 is current stable, check OpenAI docs for latest)",
+              enum: OPENAI_MODELS.image.map((m) => m.name),
+              default: DEFAULT_MODELS.image,
+              description: `Image generation model. Available: ${OPENAI_MODELS.image
+                .map((m) => m.name)
+                .join(", ")}`,
             },
             size: {
               type: "string",
@@ -225,9 +237,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             model: {
               type: "string",
-              enum: ["sora-2", "sora-2-pro"],
-              default: "sora-2",
-              description: "The Sora model to use",
+              enum: OPENAI_MODELS.video.map((m) => m.name),
+              default: DEFAULT_MODELS.video,
+              description: `Video generation model. Available: ${OPENAI_MODELS.video
+                .map((m) => m.name)
+                .join(", ")}`,
             },
             size: {
               type: "string",
@@ -267,7 +281,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "chat_completion": {
         const params = args as unknown as ChatCompletionParams;
         const response = await openai.chat.completions.create({
-          model: params.model ?? "gpt-5-1",
+          model: params.model ?? DEFAULT_MODELS.chat,
           messages: params.messages,
           temperature: params.temperature,
           max_tokens: params.max_tokens,
@@ -295,7 +309,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "create_image": {
         const params = args as unknown as CreateImageParams;
         const response = await openai.images.generate({
-          model: params.model ?? "dall-e-3",
+          model: params.model ?? DEFAULT_MODELS.image,
           prompt: params.prompt,
           size: params.size ?? "1024x1024",
           quality: params.quality ?? "standard",
@@ -382,6 +396,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "create_video": {
         const params = args as unknown as CreateVideoParams;
+        const selectedModel = params.model ?? DEFAULT_MODELS.video;
         // Note: Sora 2 API endpoint - this is a placeholder as the actual API might differ
         // Users should check OpenAI's official documentation for the correct endpoint
         return {
@@ -391,7 +406,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(
                 {
                   note: "Sora 2 API integration requires OpenAI API access. Please check platform.openai.com/docs for the latest API documentation.",
-                  model: params.model ?? "sora-2",
+                  model: selectedModel,
                   prompt: params.prompt,
                   size: params.size ?? "1280x720",
                   seconds: params.seconds ?? 10,
@@ -405,16 +420,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "list_models": {
-        const response = await openai.models.list();
-        const models = response.data
-          .map((m) => ({ id: m.id, owned_by: m.owned_by }))
-          .sort((a, b) => a.id.localeCompare(b.id));
+        // 카테고리별 모델 목록 반환
+        const categorizedModels = {
+          gpt: OPENAI_MODELS.gpt,
+          coding: OPENAI_MODELS.coding,
+          research: OPENAI_MODELS.research,
+          image: OPENAI_MODELS.image,
+          video: OPENAI_MODELS.video,
+          audio: OPENAI_MODELS.audio,
+          etc: OPENAI_MODELS.etc,
+        };
+
+        // 기본 모델 정보
+        const defaults = {
+          chat: DEFAULT_MODELS.chat,
+          coding: DEFAULT_MODELS.coding,
+          image: DEFAULT_MODELS.image,
+          video: DEFAULT_MODELS.video,
+          audio: DEFAULT_MODELS.audio,
+        };
 
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ models }, null, 2),
+              text: JSON.stringify(
+                {
+                  defaults,
+                  models: categorizedModels,
+                  total_count: getAllModels().length,
+                },
+                null,
+                2
+              ),
             },
           ],
         };
