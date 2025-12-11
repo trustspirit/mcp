@@ -14,7 +14,6 @@ import {
 } from "@google/generative-ai";
 import express from "express";
 import cors from "cors";
-import { randomUUID } from "node:crypto";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
