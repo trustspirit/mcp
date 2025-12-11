@@ -3,7 +3,7 @@ name: mcp
 services:
   openai:
     build:
-      context: ../..
+      context: .
       dockerfile: packages/openai-mcp/Dockerfile
     container_name: mcp-openai
     environment:
@@ -15,6 +15,24 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3500/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gemini:
+    build:
+      context: .
+      dockerfile: packages/gemini-mcp/Dockerfile
+    container_name: mcp-gemini
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MCP_MODE=http
+      - PORT=3501
+    ports:
+      - "3501:3501"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3501/health"]
       interval: 30s
       timeout: 10s
       retries: 3

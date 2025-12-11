@@ -16,6 +16,8 @@ echo "GEMINI_API_KEY=your-key" > packages/gemini-mcp/.env
 
 ### 2. Start Servers
 
+#### Option A: Using CLI (개별 서버)
+
 ```bash
 # Start OpenAI server on port 3500
 ./mcp -m openai
@@ -26,6 +28,19 @@ echo "GEMINI_API_KEY=your-key" > packages/gemini-mcp/.env
 # Or start all servers
 ./mcp -m all
 ```
+
+#### Option B: Using Docker Compose (통합 - 권장)
+
+```bash
+# 프로젝트 루트에서 모든 서버 한번에 시작
+docker compose up -d
+
+# 또는 특정 서비스만
+docker compose up -d openai
+docker compose up -d gemini
+```
+
+모든 컨테이너가 `mcp` 그룹으로 묶여서 Docker Desktop에서 깔끔하게 관리됩니다.
 
 ### 3. Verify Servers
 

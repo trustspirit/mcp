@@ -1,13 +1,24 @@
+name: mcp
+
 services:
-  gemini-mcp:
+  gemini:
     build:
       context: ../..
       dockerfile: packages/gemini-mcp/Dockerfile
+    container_name: mcp-gemini
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - MCP_MODE=http
       - PORT=3501
     ports:
       - "3501:3501"
-    stdin_open: true
-    tty: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3501/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: mcp-network
