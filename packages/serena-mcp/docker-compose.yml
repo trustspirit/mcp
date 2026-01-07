@@ -1,0 +1,26 @@
+name: mcp
+
+services:
+  serena:
+    build:
+      context: ../..
+      dockerfile: packages/serena-mcp/Dockerfile
+    container_name: mcp-serena
+    environment:
+      - MCP_MODE=http
+      - PORT=3502
+      - SERENA_WORKSPACE=/workspace
+    ports:
+      - "3502:3502"
+    volumes:
+      - ${WORKSPACE_PATH:-/Users/young/Documents/Workspace}:/workspace:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3502/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: mcp-network

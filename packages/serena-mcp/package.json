@@ -1,0 +1,38 @@
+{
+  "name": "@mcp/serena",
+  "version": "0.1.0",
+  "description": "Serena MCP Server - Model Context Protocol server for semantic code analysis powered by Serena",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "serena-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "mcp",
+    "serena",
+    "code-analysis",
+    "semantic",
+    "model-context-protocol",
+    "ai"
+  ],
+  "license": "MIT"
+}
