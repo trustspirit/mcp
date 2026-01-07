@@ -18,6 +18,16 @@ pnpm install
 pnpm build
 ```
 
+## Port Configuration
+
+Serena MCP uses port **3502** by default to avoid conflicts with other MCP servers:
+
+| MCP Server | Default Port |
+| ---------- | ------------ |
+| openai-mcp | 3500         |
+| gemini-mcp | 3501         |
+| serena-mcp | 3502         |
+
 ## Configuration
 
 Set your workspace path as an environment variable:
@@ -57,7 +67,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-**Important**: 
+**Important**:
+
 - Replace `/absolute/path/to/mcp` with your actual path
 - Replace workspace path with your project path
 - Restart Claude Desktop after configuration
@@ -84,8 +95,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
         "run",
         "-i",
         "--rm",
-        "-v", "/path/to/your/project:/workspace:ro",
-        "-e", "SERENA_WORKSPACE=/workspace",
+        "-v",
+        "/path/to/your/project:/workspace:ro",
+        "-e",
+        "SERENA_WORKSPACE=/workspace",
         "serena-mcp"
       ]
     }
@@ -93,7 +106,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-**Important**: 
+**Important**:
+
 - Replace `/path/to/your/project` with your actual project path
 - The `:ro` flag mounts the volume as read-only for safety
 - Restart Claude Desktop after configuration
@@ -133,6 +147,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```
 
 **장점:**
+
 - ✅ 빠른 연결 (서버가 이미 실행 중)
 - ✅ 리소스 절약 (매번 새 컨테이너를 띄우지 않음)
 - ✅ 상태 유지
@@ -300,6 +315,7 @@ Analyze a file for code quality metrics.
 ```
 
 Returns:
+
 - **complexity**: Cyclomatic complexity and nesting depth
 - **dependencies**: List of imports
 - **issues**: Code quality issues (long lines, console.log, TODO, any types)
@@ -409,17 +425,16 @@ pnpm start
 
 This MCP server is inspired by the [Serena project](https://github.com/oraios/serena) but implemented as a lightweight TypeScript solution:
 
-| Feature | Original Serena | Serena MCP |
-|---------|----------------|------------|
+| Feature          | Original Serena                  | Serena MCP                         |
+| ---------------- | -------------------------------- | ---------------------------------- |
 | Language Servers | Full LSP support (30+ languages) | Regex-based parsing (TS/JS/Python) |
-| Platform | Python + uv | Node.js + TypeScript |
-| Dependencies | Language server binaries | None (self-contained) |
-| Installation | Complex | Simple npm package |
-| Performance | Very accurate | Fast, good for most cases |
+| Platform         | Python + uv                      | Node.js + TypeScript               |
+| Dependencies     | Language server binaries         | None (self-contained)              |
+| Installation     | Complex                          | Simple npm package                 |
+| Performance      | Very accurate                    | Fast, good for most cases          |
 
 For production use with complex codebases requiring precise semantic analysis, consider the original Serena project.
 
 ## License
 
 MIT
-
